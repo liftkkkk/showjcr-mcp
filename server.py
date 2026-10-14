@@ -474,5 +474,112 @@ def search_journal(keyword: str, source: str = "cas2025", limit: int = 20) -> st
     return "\n".join(out)
 
 
+# 各数据源中承载主题/学科信息的字段（用于关键词推荐）
+_TOPIC_FIELDS = {
+    "cas": ["大类", "大类学科"] + [f"小类{i}" for i in range(1, 7)],
+    "jcr": [f"Category_{i}" for i in range(1, 7)],
+    "xr": ["大类中文名", "大类英文名", "小类1中文名", "小类1英文名"],
+    "ccf": ["领域", "刊物名称", "Journal"],
+    "ccft": ["Journal", "中文刊名"],
+}
+
+
+def _topic_text(source: str, row: dict[str, str]) -> str:
+    family = source.rstrip("0123456789")
+    parts = [row.get("Journal") or row.get("刊物名称") or ""]
+    for f in _TOPIC_FIELDS.get(family, []):
+        parts.append(row.get(f) or "")
+    return _norm(" ".join(parts))
+
+
+def _partition_rank(source: str, row: dict[str, str]) -> int:
+    """提取分区数字用于排序：1 区/Q1 → 1，越小越好；无分区返回 9。"""
+    y = source[3:] if source.startswith(("cas", "jcr")) else ""
+    for key in ([f"大类分区", f"IF Quartile({y})_1"] if y else ["大类分区", "大类新锐分区", "T分区", "分区"]):
+        v = (row.get(key) or "").strip()
+        if v:
+            m = re.match(r"[Q]?([1-4])", v)
+            if m:
+                return int(m.group(1))
+            if v.startswith("T"):
+                m2 = re.match(r"T([1-3])", v)
+                if m2:
+                    return int(m2.group(1))
+    return 9
+
+
+def _kw_hit(tokens: set[str], text: str, kw: str) -> bool:
+    """英文关键词按词边界匹配（容忍单复数，避免 graph⊂cryptography 这类误命中）；
+    中文关键词用子串匹配。"""
+    kn = _norm(kw)
+    if re.fullmatch(r"[a-z0-9]+", kn):
+        stem = kn[:-1] if kn.endswith("s") and len(kn) > 3 else kn
+        for t in tokens:
+            if t == kn:
+                return True
+            ts = t[:-1] if t.endswith("s") and len(t) > 3 else t
+            if ts == stem:
+                return True
+        return False
+    return kn in text
+
+
+@mcp.tool()
+def recommend_journals(keywords: str, source: str = "cas2025", limit: int = 15) -> str:
+    """根据论文主题关键词推荐投稿期刊（摘要选刊工作流的反向查询入口）。
+    keywords: 空格分隔的多个主题关键词，中英文均可，如 "cancer immunotherapy biomarker"
+    或 "图神经网络 推荐系统"（建议 2-5 个，来自论文摘要的提取结果）。
+    source 同 search_journal（cas2021/2022/2023/2025、jcr2020-2025、xr、ccf、ccft）。
+    期刊按关键词命中数降序、同分按分区升序排列，同时标注 Top 与预警信息。"""
+    valid = ([f"cas{y}" for y in CAS_FILES] + [f"jcr{y}" for y in JCR_FILES]
+             + [f"warn{y}" for y in WARNING_FILES] + ["xr", "xrconf", "ccf", "ccft"])
+    if source not in valid:
+        return f"source 应为以下之一: {', '.join(valid)}"
+    kws = [k for k in re.split(r"[\s,，;；]+", keywords.strip()) if k]
+    if not kws:
+        return "请提供主题关键词，如 \"deep learning graph neural network\"。"
+    rows = _load(source)
+    scored = []
+    for r in rows:
+        text = _topic_text(source, r)
+        if not text:
+            continue
+        tokens = set(re.findall(r"[a-z0-9]+", text))
+        hits = sum(1 for k in kws if _kw_hit(tokens, text, k))
+        if hits > 0:
+            scored.append((hits, _partition_rank(source, r), r))
+    if not scored:
+        return (f"在 {source} 中没有期刊命中关键词 {kws}。"
+                f"建议换更通用的学科词（如 oncology / 图神经网络）或换数据源再试。")
+    scored.sort(key=lambda t: (-t[0], t[1]))
+    out = [f"## 按关键词 {kws} 推荐（{source}，命中 {len(scored)} 本，前 {min(limit, len(scored))} 本）\n",
+           "读法：命中数 = 命中你关键词的个数（越高越对口）；分区 1 最优。"]
+    for hits, _, r in scored[:limit]:
+        name = r.get("Journal") or r.get("刊物名称") or ""
+        y = source[3:] if source.startswith(("cas", "jcr")) else ""
+        extra = []
+        if source.startswith("cas"):
+            extra.append(f"{r.get('大类','')} {r.get('大类分区','')}")
+            if (r.get("Top") or "").strip() not in ("", "否"):
+                extra.append("Top")
+        elif source.startswith("jcr"):
+            extra.append(f"IF {r.get(f'IF({y})','')}")
+            extra.append(f"{r.get('Category_1','')} {r.get(f'IF Quartile({y})_1','')}")
+        elif source == "xr":
+            extra.append(f"{r.get('大类中文名','')} {r.get('大类新锐分区','')}")
+            if (r.get("Top") or "").strip() not in ("", "—"):
+                extra.append("Top")
+            if (r.get("预警标记") or "").strip() not in ("", "—"):
+                extra.append(f"⚠预警:{r.get('预警标记','')}")
+        elif source == "ccf":
+            extra.append(f"{r.get('领域','')} {r.get('CCF推荐类型','')}")
+        elif source == "ccft":
+            extra.append(f"T{r.get('T分区','')}")
+        zh = r.get("刊名", "") or r.get("中文刊名", "")
+        out.append(f"- **{name}**" + (f"（{zh}）" if zh else "")
+                   + f" | 命中 {hits} | " + " | ".join(e for e in extra if e.strip()))
+    return "\n".join(out)
+
+
 if __name__ == "__main__":
     mcp.run(transport="stdio")

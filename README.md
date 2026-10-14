@@ -22,6 +22,7 @@
 | `query_ccft` | 查 CCF-T 高质量期刊 T1/T2/T3 |
 | `query_warning_list` | 查国际预警期刊名单（2024 起为预警原因） |
 | `query_all` | 一键全库体检：一本期刊在全部数据源的记录汇总 |
+| `recommend_journals` | **反向选刊**：按论文主题关键词推荐期刊（英文按词边界匹配、中文子串），按命中数与分区排序 |
 | `search_journal` | 模糊检索刊名候选 |
 | `list_data_sources` | 列出全部数据表及行数 |
 
@@ -64,6 +65,7 @@ python scripts/fetch_data.py
 - 「CANCERS 是不是预警期刊？」→ `query_warning_list("CANCERS")`
 - 「ACL 在 CCF 是什么等级？」→ `query_ccf("ACL")`
 - 「给 Nature 做个全面体检」→ `query_all("Nature")`
+- 「我的论文摘要讲肿瘤免疫治疗标志物，投什么期刊？」→ 先从摘要提取关键词（如 `cancer immunotherapy biomarker`），再 `recommend_journals(keywords, "cas2025")` 拿候选，最后对入围期刊用 `query_all` 体检
 
 ## 数据说明与版权
 
