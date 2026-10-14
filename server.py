@@ -383,8 +383,11 @@ def query_all(journal: str) -> str:
             r = hits[0]
             small = "; ".join(f"{r.get(f'小类{i}','').strip()} {r.get(f'小类{i}分区','').strip()}"
                               for i in range(1, 7) if (r.get(f"小类{i}") or "").strip())
+            wos = (r.get("Web of Science") or "").strip()
             sections.append(f"**中科院分区 {y}**：大类 {r.get('大类','')} {r.get('大类分区','')}，"
-                            f"Top: {r.get('Top','') or '—'}" + (f"；小类：{small}" if small else ""))
+                            f"Top: {r.get('Top','') or '—'}"
+                            + (f"，索引: {wos}" if wos else "")
+                            + (f"；小类：{small}" if small else ""))
     for y in sorted(JCR_FILES):
         hits = find_rows(f"jcr{y}", journal, strict=True)
         if hits:
@@ -558,14 +561,23 @@ def recommend_journals(keywords: str, source: str = "cas2025", limit: int = 15) 
         name = r.get("Journal") or r.get("刊物名称") or ""
         y = source[3:] if source.startswith(("cas", "jcr")) else ""
         extra = []
+        wos = (r.get("Web of Science") or "").strip()
         if source.startswith("cas"):
+            if wos:
+                extra.append(f"索引 {wos}")
             extra.append(f"{r.get('大类','')} {r.get('大类分区','')}")
             if (r.get("Top") or "").strip() not in ("", "否"):
                 extra.append("Top")
         elif source.startswith("jcr"):
+            if wos:
+                extra.append(f"索引 {wos}")
             extra.append(f"IF {r.get(f'IF({y})','')}")
             extra.append(f"{r.get('Category_1','')} {r.get(f'IF Quartile({y})_1','')}")
         elif source == "xr":
+            db = (r.get("数据库") or "").strip()
+            m = re.search(r"\(([^)]*)\)", db)
+            if m:
+                extra.append(f"索引 {m.group(1)}")
             extra.append(f"{r.get('大类中文名','')} {r.get('大类新锐分区','')}")
             if (r.get("Top") or "").strip() not in ("", "—"):
                 extra.append("Top")
