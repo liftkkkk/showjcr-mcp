@@ -85,3 +85,21 @@ This repository does **not** distribute the data files. All data copyrights belo
 ## License
 
 The code is released under the [MIT License](LICENSE).
+
+---
+
+## Buy me a coffee
+
+ShowJCR MCP Server is an open-source project I develop and maintain in my spare time, free forever.
+
+If it helped you look up journal rankings, pick a venue for your paper, or saved you the trouble of
+wrestling the data files yourself - consider buying me a coffee (9.9 CNY is enough). Every bit of
+support goes straight into new features and bug fixes.
+
+<p align="center">
+  <img src="donate.jpg" alt="Buy me a coffee" width="280">
+</p>
+
+<p align="center"><i>Leave a note with your donation about the feature you want most - I prioritize those ;)</i></p>
+
+**Can't donate?** Starring the repo, opening an Issue, or sharing it with someone who needs it helps just as much!

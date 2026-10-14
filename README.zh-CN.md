@@ -86,3 +86,19 @@ python scripts/fetch_data.py
 ## License
 
 代码部分以 [MIT](LICENSE) 协议开源。
+
+---
+
+## 打赏支持
+
+ShowJCR MCP Server 是我在业余时间开发和维护的开源项目，永久免费。
+
+如果它帮你查过期刊分区、给论文选过刊，或者省去了你自己整理数据文件的麻烦——可以考虑请我喝杯咖啡（9.9 元就够）。每一份支持都会直接变成新功能和 bug 修复。
+
+<p align="center">
+  <img src="donate.jpg" alt="打赏支持" width="280">
+</p>
+
+<p align="center"><i>打赏时留言你最想要的功能，我会优先做 ;)</i></p>
+
+**不方便打赏？** 点个 Star、提个 Issue、或者分享给需要的人，同样是很好的支持！
