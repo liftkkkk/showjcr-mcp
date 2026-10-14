@@ -1,0 +1,10 @@
+# 数据文件不随仓库分发（版权原因），运行 scripts/fetch_data.py 下载
+data/
+
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 本地开发时指向 ShowJCR 仓库的数据目录副本
+*.db
