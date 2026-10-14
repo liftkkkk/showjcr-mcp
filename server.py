@@ -309,7 +309,13 @@ def query_ccf(query: str) -> str:
     全称、领域关键词（如 人工智能）。返回领域、推荐类型（A/B/C 类）、刊物/会议、网址。"""
     hits = find_rows("ccf", query)
     if not hits:
-        return f"在 CCF 2026 推荐目录中未找到「{query}」。"
+        # 回退：按领域 / 出版社子串匹配（如「人工智能」「ACM」）
+        qn = _norm(query)
+        rows = _load("ccf")
+        hits = [r for r in rows
+                if qn in _norm(r.get("领域", "")) or qn in _norm(r.get("出版社", ""))]
+    if not hits:
+        return f"在 CCF 2026 推荐目录中未找到「{query}」。可按领域检索，如：人工智能、网络与信息安全、体系结构。"
     out = [f"## CCF 推荐目录 2026：命中 {len(hits)} 条\n"]
     for r in hits[:10]:
         lines = [f"### {r.get('刊物名称', '')} — {r.get('Journal', '')}"]
@@ -428,7 +434,21 @@ def search_journal(keyword: str, source: str = "cas2025", limit: int = 20) -> st
              + [f"warn{y}" for y in WARNING_FILES] + ["xr", "xrconf", "ccf", "ccft"])
     if source not in valid:
         return f"source 应为以下之一: {', '.join(valid)}"
-    hits = find_rows(source, keyword, limit=limit)
+    rows = _load(source)
+    qn = _norm(keyword.strip())
+    if not qn:
+        return "请提供检索关键词。"
+
+    def _all_names(r: dict[str, str]) -> str:
+        return " ".join(_norm(v) for k, v in r.items() if k in _NAME_FIELDS and v)
+
+    # 搜索场景直接做子串匹配（刊名类字段），精确命中也算子串的特例
+    hits = [r for r in rows if qn in _all_names(r)]
+    if not hits:
+        names = [_all_names(r) for r in rows]
+        close = difflib.get_close_matches(qn, names, n=limit, cutoff=0.75)
+        close_set = set(close)
+        hits = [r for r in rows if _all_names(r) in close_set]
     if not hits:
         return f"在 {source} 中未找到与「{keyword}」相近的条目。"
     out = [f"## 在 {source} 中检索「{keyword}」：{len(hits)} 条候选\n"]
