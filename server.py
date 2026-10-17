@@ -5,9 +5,8 @@ ShowJCR MCP Server
 提供中科院分区、JCR 影响因子、新锐分区、CCF 推荐目录、CCF-T 高质量期刊、
 国际预警期刊名单等查询能力。
 
-数据目录默认指向本仓库：
-  .../2026-10-14-09-24-35/ShowJCR/中科院分区表及JCR原始数据文件
-可通过环境变量 SHOWJCR_DATA_DIR 覆盖。
+数据目录默认指向本仓库的 ./data（数据 CSV 随仓库分发），
+可通过环境变量 SHOWJCR_DATA_DIR 覆盖；也可用 scripts/fetch_data.py 重新下载最新数据。
 """
 
 import csv
@@ -17,7 +16,16 @@ import re
 import sys
 from typing import Any, Optional
 
-from mcp.server.fastmcp import FastMCP
+# ---------------------------------------------------------------------------
+# MCP SDK 兼容导入（同时支持 mcp 1.x 与 2.x）
+#   mcp 2.0 起 FastMCP 更名为 MCPServer，且旧导入路径 mcp.server.fastmcp
+#   被直接移除（不再有弃用别名）。装饰器 @mcp.tool() 与 run(transport=...)
+#   的用法在两个版本间保持一致，因此只需处理导入差异。
+# ---------------------------------------------------------------------------
+try:
+    from mcp.server.mcpserver import MCPServer as FastMCP  # mcp >= 2.0
+except ImportError:  # mcp 1.x（fastmcp 尚未更名）
+    from mcp.server.fastmcp import FastMCP
 
 # ---------------------------------------------------------------------------
 # 数据文件配置
@@ -25,9 +33,8 @@ from mcp.server.fastmcp import FastMCP
 
 # 数据目录解析顺序：
 #   1) 环境变量 SHOWJCR_DATA_DIR
-#   2) 本仓库内 ./data 目录（先运行 scripts/fetch_data.py 下载）
-# 数据文件本身不随本仓库分发，版权归中科院文献情报中心 / CCF 等原始机构所有，
-# 请通过 scripts/fetch_data.py 从 hitfyd/ShowJCR 项目获取。
+#   2) 本仓库内 ./data 目录（随仓库分发；scripts/fetch_data.py 可重新下载）
+# 数据版权归中科院文献情报中心 / CCF 等原始机构所有，使用查询结果时请遵守相应机构条款。
 DEFAULT_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 DATA_DIR = os.environ.get("SHOWJCR_DATA_DIR") or DEFAULT_DATA_DIR
 

@@ -37,13 +37,13 @@ WoS index type (SCIE / ESCI / SSCI / AHCI, including dual indexing such as `SSCI
 
 ```bash
 # 1. Install dependencies (Python 3.10+ required)
-pip install "mcp>=1.0,<2"
+pip install "mcp>=1.0,<3"
 
-# 2. Download data files into ./data
+# 2. (Optional) Refresh data files in ./data — the CSVs are already included in the repo
 python scripts/fetch_data.py
 ```
 
-> Pin to mcp 1.x — version 2.x introduced breaking API changes (FastMCP was renamed).
+> Compatible with both mcp 1.x and 2.x — the server auto-detects the SDK version at import time (in 2.0 `FastMCP` was renamed to `MCPServer`).
 
 ## Configuration
 
@@ -73,7 +73,7 @@ Add the server to your MCP client's config file (the data directory can also be 
 
 ## Data Notice & Copyright
 
-This repository does **not** distribute the data files. All data copyrights belong to their respective institutions:
+The data CSV files are included in this repository under [`data/`](data/). All data copyrights belong to their respective institutions:
 
 - CAS Journal Ranking: National Science Library, Chinese Academy of Sciences
 - JCR: Clarivate Analytics

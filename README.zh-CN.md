@@ -38,13 +38,13 @@
 
 ```bash
 # 1. 安装依赖（需要 Python 3.10+）
-pip install "mcp>=1.0,<2"
+pip install "mcp>=1.0,<3"
 
-# 2. 下载数据文件到 ./data 目录
+# 2.（可选）更新 ./data 目录下的数据文件——数据 CSV 已随仓库分发
 python scripts/fetch_data.py
 ```
 
-> mcp 2.x 起接口有破坏性变更（FastMCP 改名），请固定使用 1.x。
+> 同时兼容 mcp 1.x 与 2.x——服务在导入时自动探测 SDK 版本（2.0 起 FastMCP 更名为 MCPServer）。
 
 ## 配置
 
@@ -74,7 +74,7 @@ python scripts/fetch_data.py
 
 ## 数据说明与版权
 
-本仓库**不分发数据文件**。数据版权归各自机构所有：
+数据 CSV 文件已包含在本仓库的 [`data/`](data/) 目录中。数据版权归各自机构所有：
 
 - 中科院分区表：中国科学院文献情报中心
 - JCR：Clarivate Analytics
